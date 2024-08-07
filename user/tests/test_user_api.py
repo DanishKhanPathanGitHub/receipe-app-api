@@ -57,19 +57,21 @@ class PublicUserApiTests(TestCase):
         user_exist = get_user_model().objects.filter(email=payload['email']).exists()
         self.assertFalse(user_exist)
 
+    # Test function
     def test_token_create_for_user(self):
         """Test generates token for valid credentials"""
         user_details = {
-            'name':'Test Name',
-            'email':'test@example.com',
-            'password':'testpass123',
+            'name': 'Test Name',
+            'email': 'test@example.com',
+            'password': 'testpass123',
         }
-        create_user(**user_details)
-
+        user = create_user(**user_details)
+        print(user.email)
         payload = {
-            'email':user_details['email'],
+            'email': user_details['email'],
             'password': user_details['password'],
         }
+
         res = self.client.post(TOKEN_URL, payload)
 
         self.assertIn('token', res.data)
