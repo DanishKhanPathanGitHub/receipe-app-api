@@ -13,33 +13,43 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {
                 'write_only':True,
                 'min_length':6,
+                'trim_whitespace': False,
             }
         }
 
     def create(self, validated_data):
         return get_user_model().objects.create_user(**validated_data)
     
-class AuthTokenSerializer(serializers.Serializer):
+    def update(self, instance, validateed_data):
+        password = validateed_data.pop('password', None)
+        user = super().update(instance, validateed_data)
 
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
+    
+class AuthTokenSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(
         style={"input_type":"password"},
-        trim_whitespace = False,
+        trim_whitespace=False,
     )
 
     def validate(self, attrs):
-        print(attrs)
         email = attrs.get('email')
         password = attrs.get('password')
+        print(f"AuthTokenSerializer.validate: email={email} password={password}")
         user = authenticate(
             request=self.context.get('request'),
-
-            username = email,
-            password = password,
+            username=email,
+            password=password,
         )
-        print('AuthTokenSerializer.validate: email=', email, 'password=', password, 'user=', user)
+        print(f"AuthTokenSerializer.validate: email={email} password={password} user={user}")
         if not user:
-            msg = _('unable to authenticate with provided credentials')
+            print(f"User not authenticated: {user}")
+            msg = _('Unable to authenticate with provided credentials')
             raise serializers.ValidationError(msg, code='authenticate')
-        attrs['user'] = user
-        return attrs
+        else:
+            attrs['user'] = user
+            return attrs

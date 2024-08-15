@@ -28,5 +28,6 @@ urlpatterns = [
         name='api-docs',
     ),
     #This will take schema:yml file of API, & will provide graphical UI representation 
-    path('api/user/', include('user.urls'))
+    path('api/user/', include('user.urls')),
+    path("api/recipe/", include('recipe.urls')),
 ]
