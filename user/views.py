@@ -60,11 +60,11 @@ class ForgotPasswordView(APIView):
             user.save()
             # Send email
             subject = 'Password Reset'
-            message = f'Use the link below to reset confirm email: \n {user.email_token}'
+            message = f'Use the token below to reset confirm email: \n Token: {user.email_token}'
             email = EmailMessage(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
             email.send()
         
-        return Response({"message": "If an account with that email exists, we have sent an email with instructions."}, status=status.HTTP_200_OK)
+        return Response({"message": "we have sent token to your email, \n use it while reseting password."}, status=status.HTTP_200_OK)
 
 class ResetPasswordView(APIView):
     serializer_class = ResetPasswordSerializer
