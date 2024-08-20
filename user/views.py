@@ -60,7 +60,7 @@ class ForgotPasswordView(APIView):
             user.save()
             # Send email
             subject = 'Password Reset'
-            message = f'Use the token below to reset confirm email: \n Token: {user.email_token}'
+            message = f'Use the token below to reset password: \n Token: {user.email_token}'
             email = EmailMessage(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
             email.send()
         
