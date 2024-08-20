@@ -1,9 +1,5 @@
 from django.core.mail import EmailMessage
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.contrib.auth.tokens import default_token_generator
 from django.http import HttpResponse
-from django.shortcuts import reverse
 from django.conf import settings
 from rest_framework import generics, authentication, permissions, status
 from rest_framework.views import APIView
@@ -12,7 +8,6 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.settings import api_settings
 from .serializers import *
 import secrets
-
 
 class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
