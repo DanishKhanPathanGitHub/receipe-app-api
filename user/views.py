@@ -10,9 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.settings import api_settings
-from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .serializers import *
-from core.models import User
 import secrets
 
 
@@ -36,7 +34,7 @@ class ActivateUserView(APIView):
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data['token']
         print(token)
-        user = User.objects.filter(email_token=token).first()
+        user = get_user_model().objects.filter(email_token=token).first()
         if user and user.is_email_token_valid(token):
             user.is_active = True
             user.clear_email_token()
@@ -52,7 +50,7 @@ class ForgotPasswordView(APIView):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
-        user = User.objects.filter(email=email).first()
+        user = get_user_model().objects.filter(email=email).first()
         
         if user:
             user.set_email_token()
@@ -74,7 +72,7 @@ class ResetPasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data['token']
         print(token)
-        user = User.objects.filter(email_token=token).first()
+        user = get_user_model().objects.filter(email_token=token).first()
 
         if user and user.is_email_token_valid(token):
             user.set_password(serializer.validated_data['password'])
