@@ -66,9 +66,11 @@ class PublicUserApiTests(TestCase):
             password=payload['password'], 
             name='Test Name'
         )
+        user.is_active=True
+        user.save()
         print(f"User created: {user.email}, {user.check_password(payload['password'])}")
         print(f"User object: {user}")
-
+        
         res = self.client.post(TOKEN_URL, payload)
         print(f"Response data: {res.data}")
         self.assertIn('token', res.data)

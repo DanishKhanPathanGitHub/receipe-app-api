@@ -130,10 +130,22 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/static/static/'
+MEDIA_URL = '/static/media/'
+
+MEDIA_ROOT = '/vol/web/media'
+STATIC_ROOT = '/vol/web/static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST='smtp.gmail.com' 
+EMAIL_PORT=587  
+EMAIL_HOST_USER='dkz20041506@gmail.com' 
+EMAIL_HOST_PASSWORD='lfjxmfxjxdapqpax'
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'Recipe-API <dkz20041506@gmail.com>'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -146,3 +158,11 @@ AUTHENTICATION_BACKENDS = [
     'user.backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+SPECTACULAR_SETTINGS = {
+    'COMPONENT_SPLIT_REQUEST': True,
+    'TITLE': 'Your API',
+    'DESCRIPTION': 'Your API description',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}

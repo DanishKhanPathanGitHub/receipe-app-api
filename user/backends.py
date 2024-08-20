@@ -11,8 +11,6 @@ class EmailBackend(ModelBackend):
         except UserModel.DoesNotExist:
             return None
         else:
-            if user.check_password(password):
-                user.is_active = True
-                user.save(update_fields=['is_active'])
+            if user.check_password(password) and user.is_active:
                 return user
         return None

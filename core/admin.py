@@ -6,13 +6,13 @@ from django.utils.translation import gettext_lazy as _
 
 class UserAdmin(BaseUserAdmin):
     ordering = ["id"]
-    list_display = ["email", "name", "is_active"]
+    list_display = ["email", "name", "is_active", "is_superuser", "email_token", "token_created_at",]
     fieldsets = (
         (None, 
             {
                 'fields': (
                 'email', 
-                'password'
+                'password',
             )
             }
         ),
@@ -55,3 +55,4 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(User, UserAdmin)
 admin.site.register(Recipe)
 admin.site.register(Tag)
+admin.site.register(Ingredient)

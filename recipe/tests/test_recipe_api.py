@@ -3,7 +3,11 @@ from django.test import TestCase
 from django.urls import reverse
 from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
 from decimal import Decimal
-from core.models import Recipe, Tag
+from core.models import Recipe, Tag, Ingredient
+
+import tempfile
+import os
+from PIL import Image
 
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -12,6 +16,9 @@ RECIPES_URL = reverse('recipe:recipe-list')
 
 def detail_url(recipe_id):
     return reverse('recipe:recipe-detail', args=[recipe_id])
+
+def image_upload_url(recipe_id):
+    return reverse('recipe:recipe-upload-image', args=[recipe_id])
 
 def create_recipe(user, **params):
     defaults = {
@@ -252,3 +259,113 @@ class PrivateRecipeAPITests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(recipe.tags.count(), 0)
         
+
+    def test_create_recipe_with_new_and_existingingredients(self):
+        """
+        Checks recipe creation with new ingredient and existing ingredient
+        both in one test
+        """
+        payload = {
+            "title":"sample recipe title",
+            "time_minutes":5,
+            "price":Decimal("10.50"),
+            "ingredients":[
+                {"name":"water"},
+                {"name":"soda"},
+            ],
+        }
+        existing_ing = Ingredient.objects.create(name="water", user=self.user)
+        res = self.client.post(RECIPES_URL, payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        
+        recipes = Recipe.objects.filter(user=self.user)
+        self.assertEqual(recipes.count(), 1)
+        
+        recipe = recipes[0]
+        self.assertIn(existing_ing, recipe.ingredients.all())
+        self.assertEqual(recipe.ingredients.count(), 2)
+        
+        for ing in payload['ingredients']:
+            self.assertTrue(
+                recipe.ingredients.filter(
+                    name=ing['name'], user=self.user
+                ).exists()
+            )
+    
+    def test_create_or_assign_ingredients_on_recipe_update(self):
+        ing = Ingredient.objects.create(name="soda", user=self.user)
+        recipe = create_recipe(user=self.user)
+        recipe.ingredients.add(ing)
+
+        payload = {
+            "ingredients":[
+                {"name":"soda"},
+                {"name":"water"},
+            ]
+        }
+        url = detail_url(recipe.id)
+        res = self.client.patch(url, payload, format='json')
+        
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(Ingredient.objects.all().count(), 2)
+        self.assertIn(ing, recipe.ingredients.all())
+
+    def test_clear_recipe_ingredientss(self):
+        ing = Ingredient.objects.create(user=self.user, name="salt")
+        recipe = create_recipe(user=self.user)
+        recipe.ingredients.add(ing)
+
+        payload = {'ingredients':[]}
+        url = detail_url(recipe.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(recipe.ingredients.count(), 0)
+
+class ImageUploadTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            'user@example.com',
+            'password123',
+        )
+        self.client.force_authenticate(self.user)
+        self.recipe = create_recipe(self.user)
+
+    def tearDown(self):
+        self.recipe.image.delete()
+
+    def test_upload_image(self):
+        url = image_upload_url(self.recipe.id)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Image.new('RGB', (10,10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            payload = {'image':image_file}
+            res = self.client.post(url, payload, format="multipart")
+
+        self.recipe.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.recipe.image.path))
+
+    def test_upload_image_bad_request(self):
+        url = image_upload_url(self.recipe.id)
+
+        # Create and write to a temporary file, then use it for the request
+        with tempfile.NamedTemporaryFile(suffix='.txt', mode='w+b', delete=False) as temp_file:
+            temp_file.write(b'This is not an image')
+            temp_file.seek(0)
+            
+            # Prepare the payload with the temporary file
+            payload = {'image': temp_file}
+            res = self.client.post(url, payload, format="multipart")
+
+        # Check that the response status code is 400 Bad Request
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('image', res.data)
+        self.assertTrue('valid image' in res.data['image'][0])
+
+        # Clean up temporary file
+        os.remove(temp_file.name)

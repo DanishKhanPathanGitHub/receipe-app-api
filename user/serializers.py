@@ -20,14 +20,24 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return get_user_model().objects.create_user(**validated_data)
     
-    def update(self, instance, validateed_data):
-        password = validateed_data.pop('password', None)
-        user = super().update(instance, validateed_data)
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        user = super().update(instance, validated_data)
 
         if password:
             user.set_password(password)
             user.save()
         return user
+
+class ActivateUserSerializer(serializers.Serializer):
+    token=serializers.CharField(write_only=True, required=True)
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, required=True)
+        
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
     
 class AuthTokenSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -53,3 +63,19 @@ class AuthTokenSerializer(serializers.Serializer):
         else:
             attrs['user'] = user
             return attrs
+
+class ResetPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, required=True)
+    confirm_password = serializers.CharField(write_only=True, required=True)
+    token = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        password = attrs.get('password')
+        confirm_password = attrs.get('confirm_password')
+
+        if password != confirm_password:
+            raise serializers.ValidationError("Passwords don't match")
+        if not password:
+            raise serializers.ValidationError("Password cannot be empty")
+        return attrs
+    
